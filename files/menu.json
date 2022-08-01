@@ -1,0 +1,7 @@
+{
+  "services/Netspeed": {
+    "title": "Network Speed",
+    "index": 40,
+    "view": "vuci-app-network-speed"
+  }
+}
