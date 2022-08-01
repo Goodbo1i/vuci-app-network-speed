@@ -1,6 +1,6 @@
 # Network Speed
 
-For more examples visit: 
+For more request/response examples visit: https://documenter.getpostman.com/view/17755621/Uze1wQ3y
 
 ## Needed Installs
 
@@ -110,7 +110,7 @@ Params:
 |`start_test`      |string|Start speed test    |true    |
 |`"id"`      |string| Expects server id    |true    |
 
-Get server ID from server list. For examples go to:
+Get server ID from server list. For examples go to: https://documenter.getpostman.com/view/17755621/Uze1wQ3y
 
 #### Get Test results
 
