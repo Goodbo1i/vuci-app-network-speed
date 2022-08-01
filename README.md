@@ -2,6 +2,16 @@
 
 For more request/response examples visit: https://documenter.getpostman.com/view/17755621/Uze1wQ3y
 
+## Images
+
+![image](https://user-images.githubusercontent.com/63382553/182170501-8a16c101-8fb1-466b-b6f4-640ab12542ce.png)
+![image](https://user-images.githubusercontent.com/63382553/182170744-55fce6d0-4b4d-4db1-b5e9-23778a728f23.png)
+![image](https://user-images.githubusercontent.com/63382553/182170946-ce7d9ee3-0805-421a-b2d7-2a839c93c83e.png)
+
+
+
+
+
 ## Needed Installs
 
 #### argparse: https://openwrt.org/packages/pkgdata/lua-argparse
