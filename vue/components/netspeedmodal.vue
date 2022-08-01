@@ -25,7 +25,7 @@
           :loading="!serverList[0] ? true : false"
           :class="!serverList[0] ? 'padding' : ''"
         >
-          <h3>Please select a country</h3>
+          <h3 v-if="!serverList[0]">Please select a country</h3>
           <a-list-item
             v-for="(server, index) in serverList"
             :key="index"
