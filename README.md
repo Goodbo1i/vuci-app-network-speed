@@ -25,7 +25,6 @@ For more request/response examples visit: https://documenter.getpostman.com/view
 #### argparse: https://openwrt.org/packages/pkgdata/lua-argparse
 #### cJSON: https://openwrt.org/packages/pkgdata/cjson
 #### cURL: https://openwrt.org/packages/pkgdata/lua-argparse
-#### socket is needed
 #### vuci.utils is needed
 
 ## Getting started
