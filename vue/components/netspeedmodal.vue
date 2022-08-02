@@ -2,14 +2,11 @@
   <div>
     <a-modal :visible="visible" @cancel="handleCancel">
       <a-select
-        v-model="value"
-        :value="value"
         class="country-select"
         mode="default"
         :showSearch="true"
         style="width: 100%"
         placeholder="select one country"
-        @change="handleChange"
       >
         <a-select-option
           v-for="availableCountry in availableCountries"
@@ -25,7 +22,7 @@
           :loading="!serverList[0] ? true : false"
           :class="!serverList[0] ? 'padding' : ''"
         >
-          <h3>Please select a country</h3>
+          <h3 v-if="!serverList[0]">Please select a country</h3>
           <a-list-item
             v-for="(server, index) in serverList"
             :key="index"
@@ -53,18 +50,15 @@ export default {
   name: 'Configuaration',
   props: {
     availableCountries: Array,
-    serverList: Array,
     visible: Boolean
   },
   data() {
     return {
-      // value: 'select country'
+      serverList: Array
     }
   },
   methods: {
     getCountryServers(selectedCountry) {
-      this.value = selectedCountry
-
       this.$rpc
         .call('speedtest', 'get_server_list', { country: selectedCountry })
         .then((response) => {
@@ -82,9 +76,6 @@ export default {
     },
     changeSelectedServer(server) {
       this.$emit('selected', server)
-
-      console.log(this.value)
-
       this.$emit('closeModal')
       this.$emit('startTest')
     },
@@ -94,9 +85,6 @@ export default {
     },
     handleOk() {
       this.$emit('closeModal')
-    },
-    handleChange(value) {
-      console.log(`selected ${value}`)
     }
   }
 }
@@ -106,7 +94,6 @@ export default {
   height: 180px;
   line-height: 1.5;
 }
-
 .demo-infinite-container {
   border: 2px solid #e8e8e8;
   border-radius: 6px;

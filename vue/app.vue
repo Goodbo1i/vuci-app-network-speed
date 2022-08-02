@@ -2,12 +2,11 @@
   <div class="center">
     <netspeedmodal
       :availableCountries="availableCountries"
-      :serverList="serverList"
       :visible="visible"
       ref="netspeedmodal"
-      @closeModal="toggleModalVision()"
+      @closeModal="visible = false"
       @selected="(val) => (selectedServer = val)"
-      @startTest="startSpeedTest(1)"
+      @startTest="startSpeedTest('2')"
       v-model="selectedServer"
     />
     <a-row>
@@ -38,16 +37,16 @@
     </a-row>
 
     <div class="progressBox">
-      <span v-if="errorText">{{ errorText }}</span>
+      <span v-if="textBox">{{ textBox }}</span>
     </div>
 
     <gauge
-      :heading="gauge.title"
       :min="0"
       :max="gauge.max"
       :value="gauge.value"
       :valueToExceedLimits="true"
       activeFill="gray"
+      :dp="2"
       :inactiveFill="gauge.color"
       unit="Mbps"
       :unitOnArc="true"
@@ -58,13 +57,8 @@
     <div class="center">
       <a-row>
         <a-col span="12" class="wrapper">
-          <a-button
-            size="large"
-            :title="isDisabled ? 'Wait for server to load' : ''"
-            @click="startSpeedTest()"
-            :disabled="isDisabled"
-          >
-            <h2>{{ loading ? 'Testing..' : 'Start Test' }}</h2>
+          <a-button size="large" @click="startSpeedTest()">
+            <h2>{{ testInProgress ? 'Testing..' : 'Start Test' }}</h2>
           </a-button>
         </a-col>
         <a-col span="12">
@@ -84,12 +78,9 @@
 </template>
 <script>
 /* eslint space-before-function-paren: ["error", "never"] */
-
 // import infiniteScroll from 'vue-infinite-scroll'
-
 import { Gauge } from '@chrisheanan/vue-gauge'
 import netspeedmodal from './components/netspeedmodal.vue'
-
 export default {
   components: {
     Gauge,
@@ -102,7 +93,6 @@ export default {
       toggle: false,
       gauge: {
         value: 0,
-        title: '',
         color: '#05A4FF',
         max: 100
       },
@@ -110,19 +100,18 @@ export default {
       selectedServer: {},
       availableCountries: [],
       serverList: [],
-      download_results: [],
-      upload_results: [],
+      results: [],
       last_down: 0,
       last_up: 0,
-      isDisabled: false,
       visible: false,
       beforeModalServer: {},
       testInProgress: false,
-      errorText: ''
+      textBox: ''
     }
   },
   timers: {
-    getScanResults: { time: 200, immediate: false, repeat: true }
+    // getDownloadResults: { time: 200, immediate: false, repeat: true },
+    getTestResults: { time: 200, immediate: false, repeat: true }
   },
   methods: {
     toggleModalVision() {
@@ -134,28 +123,29 @@ export default {
       this.visible = true
     },
     startSpeedTest(num) {
-      if (num !== 1) {
+      if (num !== '1' && num !== '2') {
         this.userData = {}
         this.selectedServer = {}
       }
+      if (num === '2') this.userData = {}
 
       this.last_down = 0
       this.last_up = 0
       if (!this.selectedServer.host) {
+        this.textBox = 'Finding Best Server'
         this.getUserInfo()
         this.getBestServer()
-        this.errorText = 'Finding Best Server'
       }
       this.$rpc
         .call('speedtest', 'start_test', { id: this.selectedServer.id })
         .then((response) => {
           if (response.message === 'Test Started') {
             try {
-              this.$timer.start('getScanResults')
+              this.$timer.start('getTestResults')
               this.loading = true
               this.testInProgress = true
             } catch (e) {
-              this.errorText = e
+              this.textBox = e
             }
           }
         })
@@ -165,30 +155,42 @@ export default {
         })
     },
     getUserInfo() {
-      this.$rpc.call('speedtest', 'get_user_info', {}).then((response) => {
-        if (response.ok) {
-          try {
-            this.userData = JSON.parse(JSON.stringify(response.data.user_data))
-          } catch (e) {
-            this.errorText = e
+      this.$rpc
+        .call('speedtest', 'get_user_info', {})
+        .then((response) => {
+          if (response.ok) {
+            try {
+              this.userData = JSON.parse(
+                JSON.stringify(response.data.user_data)
+              )
+            } catch (e) {
+              this.textBox = e
+            }
           }
-        }
-      })
+        })
+        .catch(() => {
+          this.textBox = "Can't get info user, check internet connection"
+        })
     },
     getBestServer() {
-      this.$rpc.call('speedtest', 'get_best_server', {}).then((response) => {
-        if (response.status) {
-          try {
-            this.selectedServer = JSON.parse(
-              JSON.stringify(response.best_server_info.best_server)
-            )
-            this.isDisabled = false
-            this.startSpeedTest(1)
-          } catch (e) {
-            this.errorText = e
+      this.$rpc
+        .call('speedtest', 'get_best_server', {})
+        .then((response) => {
+          if (response.status) {
+            try {
+              this.selectedServer = JSON.parse(
+                JSON.stringify(response.best_server_info.best_server)
+              )
+              this.startSpeedTest('1')
+            } catch (e) {
+              this.textBox = e
+            }
           }
-        }
-      })
+        })
+        .catch(() => {
+          this.textBox =
+            "Can't get connect to server list, check internet connection"
+        })
     },
     getAllCountries() {
       this.$rpc.call('speedtest', 'get_server_list', {}).then((response) => {
@@ -199,54 +201,62 @@ export default {
             }
             this.availableCountries = [...new Set(this.availableCountries)]
           } catch (e) {
-            this.errorText = e
+            this.textBox = e
           }
         }
       })
     },
-    getScanResults() {
+    getTestResults() {
       this.$rpc.call('speedtest', 'get_test_results', {}).then((response) => {
         if (response.status === 'ok') {
           try {
-            this.download_results = response.download_results
-            if (this.download_results.status === 'working') {
-              this.gauge.value = this.download_results.download_speed
-              this.errorText = 'Testing Download Speed'
-            } else if (this.download_results.status === 'finished') {
-              this.last_down = this.download_results.download_speed.toFixed(3)
-              this.upload_results = response.upload_results
-              if (this.upload_results.status === 'working') {
-                this.errorText = 'Testing Upload Speed'
-                this.gauge.value = this.upload_results.upload_speed
-              } else if (this.upload_results.status === 'finished') {
-                this.errorText = 'Speed test finished'
-                this.last_up = this.upload_results.upload_speed.toFixed(3)
-                this.gauge.value = 0
-                this.loading = false
-                this.testInProgress = false
-                this.$timer.stop('getScanResults')
-              }
-            }
-
-            if (this.download_results.status === 'error') {
-              this.errorText = this.download_results.message
-              this.gauge.value = 0
-              this.loading = false
-              this.testInProgress = false
-              this.$timer.stop('getScanResults')
-            }
-            if (this.status === 'error') {
-              this.errorText = this.download_results.message
-              this.gauge.value = 0
-              this.loading = false
-              this.testInProgress = false
-              this.$timer.stop('getScanResults')
+            if (this.last_down <= 0) {
+              this.results = response.download_results
+              this.getDownloadResults()
+            } else if (this.last_down > 0) {
+              this.results = response.upload_results
+              this.getUploadResults()
             }
           } catch (e) {
-            this.errorText = e
+            this.sendToTextBox = e
           }
         }
       })
+    },
+    getDownloadResults() {
+      switch (this.results.status) {
+        case 'working':
+          this.gauge.value = this.results.download_speed
+          this.textBox = 'Testing Download Speed'
+          break
+        case 'finished':
+          this.last_down = this.results.download_speed.toFixed(3)
+          this.sendToTextBox('Starting Upload Test')
+          setTimeout(() => this.$timer.start('getTestResults'), 1000)
+          break
+        default:
+          this.sendToTextBox(this.results.message)
+      }
+    },
+    getUploadResults() {
+      switch (this.results.status) {
+        case 'working':
+          this.gauge.value = this.results.upload_speed
+          this.textBox = 'Testing Upload Speed'
+          break
+        case 'finished':
+          this.last_up = this.results.upload_speed.toFixed(3)
+          this.sendToTextBox('Test Finished')
+          break
+        default:
+          this.sendToTextBox(this.results.message)
+      }
+    },
+    sendToTextBox(text) {
+      this.gauge.value = 0
+      this.testInProgress = false
+      this.textBox = text
+      this.$timer.stop('getTestResults')
     }
   },
   mounted() {
@@ -262,7 +272,6 @@ export default {
 .country-select {
   padding: 10px;
 }
-
 .text {
   margin: 10px;
 }

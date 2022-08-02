@@ -26,12 +26,11 @@ function M.get_server_list(params)
     if params.country then
         cmd ="netspeed.lua -c " ..params.country 
         os.execute(cmd)   
-        serverList = cjson.decode(utils.readfile("/tmp/serverlist.json"))
     else 
         cmd = "netspeed.lua --getserverlist"
         os.execute(cmd)
-        serverList = cjson.decode(utils.readfile("/tmp/serverlist.json"))
     end
+		serverList = cjson.decode(utils.readfile("/tmp/serverlist.json"))
     return {status = "ok", serverList = serverList, message = "List rendered", cmd = cmd } 
 end
 
@@ -45,28 +44,18 @@ end
 
 function M.get_test_results()
     file = utils.readfile("/tmp/download_results.json")
-    if(file ~= nil) then
-        if(file ~= "") then
-            downloadResults = cjson.decode( file )
-            if(downloadResults.status == "finished") then
-                up_file = utils.readfile("/tmp/upload_results.json")
-                if(up_file ~= nil)then
-                    if(up_file ~= "") then
-                        uploadResults = cjson.decode(up_file)
-                        return {status = "ok", download_results = downloadResults, upload_results = uploadResults}
-                    else
-                        return {status = "ok", download_results = downloadResults, upload_results = uploadResults}
-                    end
-                    return{status = "error", message = "test failed"}
-                end
-            end
-            return {status = "ok", download_results = downloadResults}
-        else
-            return {status = "ok", download_results = downloadResults}
-        end
-    else
-        return{status = "error", message = "Test failed, check your internet connection and try again"}
+    if(file == nil or file == "") then
+			return{status = "error", message = "Test failed, check your internet connection and try again"}
+		end
+    downloadResults = cjson.decode( file )
+    if(downloadResults.status == "finished") then
+      up_file = utils.readfile("/tmp/upload_results.json")
+      if(up_file ~= nil and up_file ~= "") then
+        uploadResults = cjson.decode(up_file)
+      end
+			return {status = "ok", download_results = downloadResults, upload_results = uploadResults}
     end
+		return {status = "ok", download_results = downloadResults}
     
 end
 
